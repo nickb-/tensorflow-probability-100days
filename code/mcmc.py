@@ -21,13 +21,13 @@ from __future__ import print_function
 
 class MonteCarloEngine:
 
-    def __init__():
+    def __init__(self):
         self.session = None
         self.run = tf.function(
             self.sampler, autograph=False, experimental_compile=True
         )
 
-    def reset_session(config = None):
+    def reset_session(self, config = None):
         tf.reset_default_graph()
 
         try:
@@ -37,7 +37,7 @@ class MonteCarloEngine:
 
         self.session = tf.InteractiveSession(config = config)
 
-    def trace_function(samples, pkr):
+    def trace_function(self, samples, pkr):
         return (
             pkr.inner_results.inner_results.target_log_prob,
             pkr.inner_results.inner_results.leapfrogs_taken,
@@ -46,7 +46,16 @@ class MonteCarloEngine:
             pkr.inner_results.inner_results.log_accept_ratio
         )
 
+    def get_trace_stats(self, trace, statnames = ['log_likelihood', 'tree_size', 'diverging', 'energy', 'mean_tree_accept']):
+      return az.from_dict(sample_stats = {k:v.numpy().T for k, v in zip(statnames, trace)})
+
+    def compare_models(self, traces = [], labels = []):
+      return az.compare({
+          lab:self.get_trace_stats(trace) for lab,trace in zip(labels, traces)
+      })
+
     def sampler(
+        self, 
         model = None,    # log-probability function
         nparams = None,  # number of parameters
         inits = None,    # initialisation for parameters
@@ -91,3 +100,5 @@ class MonteCarloEngine:
         )
 
         return [samples, trace]
+
+mcmc_engine = MonteCarloEngine()
